@@ -23,11 +23,43 @@ jobs:
         with:
           node-version: '22.x'
 
+      # This repo is a monorepo (backend/ + frontend/ + shared/), not a
+      # single-package app, so each half needs its own install+build step —
+      # the Azure-generated default (checkout, then upload the raw repo with
+      # no build at all) produced a package with no dist/ folder, which is
+      # why the startup command (cd backend && node dist/backend/src/server.js)
+      # had nothing to run and Azure kept serving the previous deployment.
+      - name: Install and build backend
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+          npm prune --omit=dev
+
+      - name: Install and build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      # Assemble a package matching exactly what the startup command expects:
+      # backend/dist (compiled server + shared types) + backend's production
+      # node_modules alongside it, and frontend/dist as a sibling folder
+      # (server.ts resolves it via "../frontend/dist" relative to backend/).
+      - name: Assemble deployment package
+        run: |
+          mkdir -p deploy/backend
+          cp -r backend/dist deploy/backend/dist
+          cp -r backend/node_modules deploy/backend/node_modules
+          cp backend/package.json deploy/backend/package.json
+          mkdir -p deploy/frontend
+          cp -r frontend/dist deploy/frontend/dist
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: deploy
 
   deploy:
     runs-on: ubuntu-latest
@@ -41,7 +73,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -56,4 +88,3 @@ jobs:
           app-name: 'gdrive-llm-tanmoy'
           slot-name: 'Production'
           package: .
-          
