@@ -1,0 +1,30 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - backend/.env
+    # Only reachable from the host itself — nginx (running on the host, see
+    # deploy/nginx.filemindai.org.conf) terminates TLS and reverse-proxies here.
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - app-data:/app/backend/data
+    depends_on:
+      - charts
+
+  charts:
+    build:
+      context: ./charts-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # No published port — only the app service talks to this, over the
+    # internal compose network at http://charts:5001 (set as
+    # CHART_SERVICE_URL in backend/.env).
+    expose:
+      - "5001"
+
+volumes:
+  app-data:
