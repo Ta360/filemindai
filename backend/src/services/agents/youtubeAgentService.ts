@@ -46,19 +46,26 @@ export async function searchVideos(userId: string, query: string): Promise<Youtu
       title: decodeHtmlEntities(item.snippet?.title ?? "Untitled"),
       channelTitle: decodeHtmlEntities(item.snippet?.channelTitle ?? "Unknown channel"),
       channelId: item.snippet?.channelId ?? "",
-      thumbnailUrl: item.snippet?.thumbnails?.medium?.url ?? item.snippet?.thumbnails?.default?.url ?? "",
+      thumbnailUrl:
+        item.snippet?.thumbnails?.maxres?.url ??
+        item.snippet?.thumbnails?.high?.url ??
+        item.snippet?.thumbnails?.medium?.url ??
+        item.snippet?.thumbnails?.default?.url ??
+        "",
       publishedAt: item.snippet?.publishedAt ?? null,
       description: decodeHtmlEntities(item.snippet?.description ?? ""),
     }));
 
-  agentActivityRepo.add(userId, { agent: "youtube", action: "search", topic: query.slice(0, 120), resultCount: videos.length });
+  agentActivityRepo
+    .add(userId, { agent: "youtube", action: "search", topic: query.slice(0, 120), resultCount: videos.length })
+    .catch((err) => console.error("[youtubeAgent] activity log failed", err));
 
   return { query, videos };
 }
 
 /** Records that the user actually pressed play on a video — this is the "video songs viewed" signal for the daily charts. */
-export function recordVideoView(userId: string, videoTitle: string, channelTitle: string) {
-  agentActivityRepo.add(userId, {
+export async function recordVideoView(userId: string, videoTitle: string, channelTitle: string) {
+  await agentActivityRepo.add(userId, {
     agent: "youtube",
     action: "view",
     topic: (channelTitle || videoTitle).slice(0, 120),

@@ -77,7 +77,7 @@ export async function connectAccount(appUserId: string, code: string) {
   const profileRes = await fetch(`${GRAPH_BASE}/me?fields=id,username&access_token=${longLived}`);
   const profile = profileRes.ok ? ((await profileRes.json()) as any) : { username: null };
 
-  instagramTokensRepo.save(appUserId, {
+  await instagramTokensRepo.save(appUserId, {
     accessToken: longLived,
     instagramUserId: igUserId,
     username: profile.username ?? null,
@@ -85,19 +85,19 @@ export async function connectAccount(appUserId: string, code: string) {
   });
 }
 
-export function getStatus(appUserId: string): InstagramStatus {
-  const tokens = instagramTokensRepo.get(appUserId);
+export async function getStatus(appUserId: string): Promise<InstagramStatus> {
+  const tokens = await instagramTokensRepo.get(appUserId);
   if (!tokens) return { connected: false };
   return { connected: true, username: tokens.username ?? undefined };
 }
 
-export function disconnect(appUserId: string) {
-  instagramTokensRepo.clear(appUserId);
+export async function disconnect(appUserId: string) {
+  await instagramTokensRepo.clear(appUserId);
 }
 
 /** Fetches the connected user's own recent media — never a third party's. */
 export async function getOwnMedia(appUserId: string): Promise<InstagramMediaItem[]> {
-  const tokens = instagramTokensRepo.get(appUserId);
+  const tokens = await instagramTokensRepo.get(appUserId);
   if (!tokens) throw new Error("INSTAGRAM_NOT_CONNECTED");
 
   const params = new URLSearchParams({
@@ -119,7 +119,7 @@ export async function getOwnMedia(appUserId: string): Promise<InstagramMediaItem
     timestamp: m.timestamp,
   }));
 
-  agentActivityRepo.add(appUserId, {
+  await agentActivityRepo.add(appUserId, {
     agent: "instagram",
     action: "view_media",
     topic: tokens.username ?? "my_account",

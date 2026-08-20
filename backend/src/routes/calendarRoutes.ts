@@ -13,6 +13,6 @@ calendarRoutes.get(
     const now = new Date();
     const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const defaultEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-    res.json({ entries: activityRepo.listRange(req.userId!, start || defaultStart, end || defaultEnd) });
+    res.json({ entries: await activityRepo.listRange(req.userId!, start || defaultStart, end || defaultEnd) });
   })
 );

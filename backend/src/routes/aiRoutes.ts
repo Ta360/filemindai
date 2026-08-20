@@ -25,7 +25,7 @@ aiRoutes.post(
 aiRoutes.get(
   "/chat/:conversationId",
   asyncHandler(async (req: AuthedRequest, res) => {
-    const messages = chatRepo.list(req.userId!, req.params.conversationId);
+    const messages = await chatRepo.list(req.userId!, req.params.conversationId);
     res.json({ messages });
   })
 );
@@ -33,7 +33,7 @@ aiRoutes.get(
 aiRoutes.delete(
   "/chat/:conversationId",
   asyncHandler(async (req: AuthedRequest, res) => {
-    chatRepo.clear(req.userId!, req.params.conversationId);
+    await chatRepo.clear(req.userId!, req.params.conversationId);
     res.json({ ok: true });
   })
 );

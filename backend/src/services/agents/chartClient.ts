@@ -10,7 +10,7 @@ const AGENT_TITLES: Record<AgentName, string> = {
 
 /** Pulls real topic->count aggregates and renders them via the Matplotlib microservice. Throws if the chart service is unreachable. */
 export async function renderAgentChart(userId: string, agent: AgentName, kind: "bar" | "pie", days = 7): Promise<Buffer> {
-  const counts = agentActivityRepo.topicCounts(userId, agent, days);
+  const counts = await agentActivityRepo.topicCounts(userId, agent, days);
   const labels = counts.map((c) => c.topic);
   const values = counts.map((c) => c.count);
 

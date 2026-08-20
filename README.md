@@ -237,6 +237,10 @@ cd frontend && npm run build   # outputs static assets to frontend/dist — serv
 In production, set `NODE_ENV=production`, use HTTPS redirect URIs in Google Cloud, and point `FRONTEND_URL` /
 `GOOGLE_REDIRECT_URI` at your real domains.
 
+For a full deploy to filemindai.org, see **[DEPLOY.md](DEPLOY.md)** (Docker + nginx on your own VPS — SQLite
+persists directly) or **[CLOUDFLARE_DEPLOY.md](CLOUDFLARE_DEPLOY.md)** (Cloudflare Containers + D1 — no server to
+manage, but the database layer runs over D1 instead of local SQLite).
+
 ## 12. Testing
 
 ```bash

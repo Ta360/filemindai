@@ -142,10 +142,10 @@ export async function executeTool(name: string, args: any, ctx: ToolExecutionCon
       return buildAnalytics(files, folders.length);
     }
     case "get_search_history": {
-      return { entries: historyRepo.list(ctx.userId, args.limit ?? 50) };
+      return { entries: await historyRepo.list(ctx.userId, args.limit ?? 50) };
     }
     case "get_calendar_activity": {
-      return { entries: activityRepo.listRange(ctx.userId, args.startDate, args.endDate) };
+      return { entries: await activityRepo.listRange(ctx.userId, args.startDate, args.endDate) };
     }
     default:
       throw new Error(`UNKNOWN_TOOL_${name}`);

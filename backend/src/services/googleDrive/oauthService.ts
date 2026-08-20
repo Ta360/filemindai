@@ -40,8 +40,8 @@ export async function exchangeCodeForTokens(code: string) {
     throw new Error("GOOGLE_PROFILE_INCOMPLETE");
   }
 
-  usersRepo.upsert(profile.id, profile.email, profile.name ?? profile.email);
-  tokensRepo.save(profile.id, {
+  await usersRepo.upsert(profile.id, profile.email, profile.name ?? profile.email);
+  await tokensRepo.save(profile.id, {
     accessToken: tokens.access_token ?? null,
     refreshToken: tokens.refresh_token ?? null,
     scope: tokens.scope ?? null,
@@ -58,7 +58,7 @@ export async function exchangeCodeForTokens(code: string) {
  * has never completed the OAuth flow.
  */
 export async function getAuthorizedClient(userId: string): Promise<OAuth2Client> {
-  const stored = tokensRepo.get(userId);
+  const stored = await tokensRepo.get(userId);
   if (!stored || !stored.refreshToken) {
     throw new Error("NOT_CONNECTED");
   }
@@ -73,23 +73,25 @@ export async function getAuthorizedClient(userId: string): Promise<OAuth2Client>
   });
 
   client.on("tokens", (tokens) => {
-    tokensRepo.save(userId, {
-      accessToken: tokens.access_token ?? stored.accessToken,
-      refreshToken: tokens.refresh_token ?? stored.refreshToken,
-      scope: tokens.scope ?? stored.scope,
-      tokenType: tokens.token_type ?? stored.tokenType,
-      expiryDate: tokens.expiry_date ?? stored.expiryDate,
-    });
+    tokensRepo
+      .save(userId, {
+        accessToken: tokens.access_token ?? stored.accessToken,
+        refreshToken: tokens.refresh_token ?? stored.refreshToken,
+        scope: tokens.scope ?? stored.scope,
+        tokenType: tokens.token_type ?? stored.tokenType,
+        expiryDate: tokens.expiry_date ?? stored.expiryDate,
+      })
+      .catch((err) => console.error("[oauth token refresh save]", err));
   });
 
   return client;
 }
 
-export function isConnected(userId: string): boolean {
-  const stored = tokensRepo.get(userId);
+export async function isConnected(userId: string): Promise<boolean> {
+  const stored = await tokensRepo.get(userId);
   return Boolean(stored?.refreshToken);
 }
 
-export function disconnect(userId: string) {
-  tokensRepo.clear(userId);
+export async function disconnect(userId: string) {
+  await tokensRepo.clear(userId);
 }

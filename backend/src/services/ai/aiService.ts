@@ -74,8 +74,11 @@ function buildActions(files: DriveFile[]): AIAction[] {
   return actions;
 }
 
-function loadConversationMessages(userId: string, conversationId: string): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
-  const rows = chatRepo.list(userId, conversationId);
+async function loadConversationMessages(
+  userId: string,
+  conversationId: string
+): Promise<OpenAI.Chat.Completions.ChatCompletionMessageParam[]> {
+  const rows = await chatRepo.list(userId, conversationId);
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [{ role: "system", content: SYSTEM_PROMPT }];
   for (const row of rows) {
     if (row.role === "user") {
@@ -103,7 +106,7 @@ export async function runAssistant(userId: string, conversationId: string, userM
   }
 
   const openai = client();
-  const messages = loadConversationMessages(userId, conversationId);
+  const messages = await loadConversationMessages(userId, conversationId);
 
   let effectiveMessage = userMessage;
   if (deterministic) {
@@ -118,7 +121,7 @@ export async function runAssistant(userId: string, conversationId: string, userM
     effectiveMessage = deterministic.cleanedQuery ? `${hint} (user typed: "${userMessage}")` : hint;
   }
 
-  chatRepo.add(userId, conversationId, "user", userMessage, null);
+  await chatRepo.add(userId, conversationId, "user", userMessage, null);
   messages.push({ role: "user", content: effectiveMessage });
 
   const collected: CollectedResults = { files: [], folders: [], webResults: [], chartData: null, calledTools: new Set() };
@@ -182,12 +185,12 @@ export async function runAssistant(userId: string, conversationId: string, userM
     webResults: collected.webResults,
   };
 
-  chatRepo.add(userId, conversationId, "assistant", response.answer, {
+  await chatRepo.add(userId, conversationId, "assistant", response.answer, {
     files: response.files,
     folders: response.folders,
   });
 
-  historyRepo.add(userId, {
+  await historyRepo.add(userId, {
     query: userMessage,
     queryType: intent,
     resultCount: response.files.length + response.folders.length + response.webResults.length,
@@ -196,7 +199,7 @@ export async function runAssistant(userId: string, conversationId: string, userM
     openedFileName: null,
   });
 
-  activityRepo.add(userId, {
+  await activityRepo.add(userId, {
     action: "search",
     query: userMessage,
     fileId: null,
@@ -226,7 +229,7 @@ function emptyResponse(answer: string, intent: QueryIntent): AIResponse {
 
 export async function recordFileOpen(userId: string, fileId: string) {
   const file = await driveService.getFileMetadata(userId, fileId);
-  activityRepo.add(userId, {
+  await activityRepo.add(userId, {
     action: "open_file",
     query: null,
     fileId: file.id,

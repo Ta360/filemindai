@@ -1,0 +1,52 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "filemindai",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-10-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+
+  // Node backend + Python chart service in one image, built from
+  // ../Dockerfile.cloudflare (repo root, so it can COPY backend/, frontend/,
+  // shared/, and charts-service/ — all siblings of this worker/ folder).
+  "containers": [
+    {
+      "class_name": "AppContainer",
+      "image": "../Dockerfile.cloudflare",
+      "max_instances": 3
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "APP_CONTAINER", "class_name": "AppContainer" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AppContainer"] }],
+
+  // Created with: wrangler d1 create filemindai-db
+  // Then paste the printed database_id below.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "filemindai-db",
+      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+    }
+  ],
+
+  // filemindai.org already lives on Cloudflare (see the domain registration
+  // in your dashboard), so this just needs the zone to route here — no
+  // separate DNS host/A-record juggling like the VPS path required.
+  "routes": [
+    { "pattern": "filemindai.org/*", "custom_domain": true },
+    { "pattern": "www.filemindai.org/*", "custom_domain": true }
+  ],
+
+  // Plain (non-secret) config. Secrets (API keys, session secret, etc.) are
+  // NOT listed here — set them with `wrangler secret put <NAME>` instead,
+  // see CLOUDFLARE_DEPLOY.md.
+  "vars": {
+    "FRONTEND_URL": "https://filemindai.org",
+    "OPENAI_MODEL": "gpt-4o-mini",
+    "GOOGLE_REDIRECT_URI": "https://filemindai.org/api/auth/callback",
+    "WEB_SEARCH_PROVIDER": "serper",
+    "INSTAGRAM_REDIRECT_URI": "https://filemindai.org/api/agents/instagram/callback"
+  }
+}

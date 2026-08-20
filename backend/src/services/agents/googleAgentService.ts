@@ -32,7 +32,9 @@ export async function answerWithWebSearch(userId: string, query: string): Promis
 
   const answer = completion.choices[0]?.message?.content?.trim() || "I couldn't find an answer for that.";
 
-  agentActivityRepo.add(userId, { agent: "google", action: "search", topic: query.slice(0, 120), resultCount: sources.length });
+  agentActivityRepo
+    .add(userId, { agent: "google", action: "search", topic: query.slice(0, 120), resultCount: sources.length })
+    .catch((err) => console.error("[googleAgent] activity log failed", err));
 
   return { answer, sources, tookMs: Date.now() - started };
 }

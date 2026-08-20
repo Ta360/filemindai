@@ -1,0 +1,54 @@
+# syntax=docker/dockerfile:1
+# ---------------------------------------------------------------------------
+# Cloudflare Containers image: Node backend (+ built frontend) AND the
+# Python/Matplotlib chart service in ONE container (separate Containers
+# can't easily talk to each other, so they're merged here — see
+# start.cloudflare.sh). For the VPS deployment, use the plain root
+# Dockerfile + docker-compose.prod.yml instead, which keeps them separate.
+# ---------------------------------------------------------------------------
+
+FROM node:22-alpine AS frontend-build
+WORKDIR /app
+COPY shared ./shared
+COPY frontend ./frontend
+WORKDIR /app/frontend
+RUN npm ci
+RUN npm run build
+
+FROM node:22-alpine AS backend-build
+WORKDIR /app
+COPY shared ./shared
+COPY backend ./backend
+WORKDIR /app/backend
+RUN npm ci
+RUN npm run build
+
+# Debian-based (not alpine) for the runtime stage: matplotlib has prebuilt
+# glibc wheels, so `pip install` here is fast — on alpine's musl libc it
+# would need to compile from source.
+FROM node:22-slim AS runtime
+ENV NODE_ENV=production
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 python3-pip python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app/backend
+COPY backend/package.json backend/package-lock.json ./
+RUN npm ci --omit=dev
+COPY --from=backend-build /app/backend/dist ./dist
+COPY --from=frontend-build /app/frontend/dist /app/frontend/dist
+
+WORKDIR /app/charts-service
+COPY charts-service/requirements.txt .
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --no-cache-dir -r requirements.txt
+COPY charts-service/app.py .
+
+WORKDIR /app
+COPY start.cloudflare.sh ./start.sh
+RUN chmod +x ./start.sh
+
+EXPOSE 4000 5001
+CMD ["./start.sh"]

@@ -10,14 +10,14 @@ historyRoutes.get(
   "/",
   asyncHandler(async (req: AuthedRequest, res) => {
     const limit = req.query.limit ? Number(req.query.limit) : 100;
-    res.json({ entries: historyRepo.list(req.userId!, limit) });
+    res.json({ entries: await historyRepo.list(req.userId!, limit) });
   })
 );
 
 historyRoutes.delete(
   "/:id",
   asyncHandler(async (req: AuthedRequest, res) => {
-    historyRepo.remove(req.userId!, req.params.id);
+    await historyRepo.remove(req.userId!, req.params.id);
     res.json({ ok: true });
   })
 );
@@ -25,7 +25,7 @@ historyRoutes.delete(
 historyRoutes.delete(
   "/",
   asyncHandler(async (req: AuthedRequest, res) => {
-    historyRepo.clear(req.userId!);
+    await historyRepo.clear(req.userId!);
     res.json({ ok: true });
   })
 );

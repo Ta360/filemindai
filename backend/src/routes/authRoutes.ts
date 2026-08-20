@@ -51,8 +51,8 @@ authRoutes.get(
   attachUser,
   asyncHandler(async (req: AuthedRequest, res) => {
     if (!req.userId) return res.json({ connected: false });
-    const user = usersRepo.get(req.userId);
-    res.json({ connected: isConnected(req.userId), email: user?.email });
+    const [user, connected] = await Promise.all([usersRepo.get(req.userId), isConnected(req.userId)]);
+    res.json({ connected, email: user?.email });
   })
 );
 
@@ -60,7 +60,7 @@ authRoutes.post(
   "/logout",
   attachUser,
   asyncHandler(async (req: AuthedRequest, res) => {
-    if (req.userId) disconnect(req.userId);
+    if (req.userId) await disconnect(req.userId);
     clearSessionCookie(res);
     res.json({ ok: true });
   })

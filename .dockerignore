@@ -13,5 +13,4 @@ frontend/tsconfig.tsbuildinfo
 .git
 .gitignore
 *.md
-charts-service
 .claude

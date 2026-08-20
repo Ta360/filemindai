@@ -32,6 +32,14 @@ export const env = {
 
   // Local Python/Flask + Matplotlib microservice (see charts-service/)
   chartServiceUrl: required("CHART_SERVICE_URL", "http://localhost:5001"),
+
+  // Set only when running inside the Cloudflare Container deployment (see
+  // worker/). Their presence switches the database layer from local SQLite
+  // to real HTTPS calls back to the Worker's own domain, which answers them
+  // using its D1 binding — see src/database/dbClient.ts and
+  // worker/src/index.ts.
+  internalDbSecret: required("INTERNAL_DB_SECRET"),
+  internalDbUrl: required("INTERNAL_DB_URL"),
 };
 
 export const isGoogleConfigured = Boolean(env.googleClientId && env.googleClientSecret);
@@ -39,3 +47,4 @@ export const isOpenAIConfigured = Boolean(env.openaiApiKey);
 export const isWebSearchConfigured = env.webSearchProvider !== "none" && Boolean(env.searchApiKey);
 export const isYoutubeConfigured = Boolean(env.youtubeApiKey);
 export const isInstagramConfigured = Boolean(env.instagramAppId && env.instagramAppSecret);
+export const isCloudflareMode = Boolean(env.internalDbSecret);

@@ -45,7 +45,7 @@ agentRoutes.post(
   "/youtube/view",
   asyncHandler(async (req: AuthedRequest, res) => {
     const { videoTitle, channelTitle } = viewSchema.parse(req.body);
-    youtubeAgent.recordVideoView(req.userId!, videoTitle, channelTitle);
+    await youtubeAgent.recordVideoView(req.userId!, videoTitle, channelTitle);
     res.json({ ok: true });
   })
 );
@@ -56,7 +56,7 @@ agentRoutes.post(
 agentRoutes.get(
   "/instagram/status",
   asyncHandler(async (req: AuthedRequest, res) => {
-    res.json(instagramAgent.getStatus(req.userId!));
+    res.json(await instagramAgent.getStatus(req.userId!));
   })
 );
 
@@ -87,7 +87,7 @@ agentRoutes.get(
 agentRoutes.post(
   "/instagram/disconnect",
   asyncHandler(async (req: AuthedRequest, res) => {
-    instagramAgent.disconnect(req.userId!);
+    await instagramAgent.disconnect(req.userId!);
     res.json({ ok: true });
   })
 );
@@ -117,7 +117,7 @@ agentRoutes.get(
     const now = new Date();
     const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const defaultEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-    const entries = agentActivityRepo.listRange(req.userId!, agent, start || defaultStart, end || defaultEnd);
+    const entries = await agentActivityRepo.listRange(req.userId!, agent, start || defaultStart, end || defaultEnd);
     res.json({ entries });
   })
 );
